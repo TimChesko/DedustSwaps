@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "dedustswaps"
+version = "0.1.0"
+description = ""
+authors = ["Tima <timofey.lazarev@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+aiogram = "3.0.0b7"
+environs = "^9.5.0"
+orjson = "^3.8.13"
+structlog = "^23.1.0"
+redis = "^4.5.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
