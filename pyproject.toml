@@ -12,6 +12,7 @@ environs = "^9.5.0"
 orjson = "^3.8.13"
 structlog = "^23.1.0"
 redis = "^4.5.5"
+apscheduler = "^3.10.1"
 
 
 [build-system]

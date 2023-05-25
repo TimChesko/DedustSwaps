@@ -7,6 +7,7 @@ from redis.asyncio.client import Redis
 from src.data import config
 from src.database.connection import DataBase
 from src.handlers import private
+from src.utils import APScheduler
 
 
 async def set_handlers(dispatcher: Dispatcher) -> None:
@@ -36,7 +37,7 @@ async def on_shutdown_polling(dispatcher: Dispatcher, bot: Bot) -> None:
 
 
 async def main() -> None:
-    # APScheduler.setup()
+    APScheduler.setup()
     bot = Bot(config.BOT_TOKEN, parse_mode="HTML")
     dp = Dispatcher(
         storage=RedisStorage(
