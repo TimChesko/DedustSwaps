@@ -5,7 +5,8 @@ from aiogram.fsm.storage.redis import RedisStorage
 from redis.asyncio.client import Redis
 
 from src.data import config
-from src.database.connection import DataBase
+from src.database.process import DataBase
+from src.database.create import CreateTables
 from src.handlers import private
 from src.utils import APScheduler
 
@@ -23,16 +24,20 @@ async def setup_aiogram(dispatcher: Dispatcher) -> None:
     await set_middlewares()
 
 
+async def set_database(dispatcher: Dispatcher):
+    dispatcher['db_pool'] = await DataBase(None).create_db_connection(config)
+    await CreateTables(dispatcher['db_pool']).process()
+
+
 async def on_startup_polling(dispatcher: Dispatcher, bot: Bot) -> None:
     await bot.delete_webhook(drop_pending_updates=True)
-    dispatcher['config'] = config
-    dispatcher['db_pool'] = await DataBase(dispatcher).create_db_connection()
+    await set_database(dispatcher)
     await setup_aiogram(dispatcher)
 
 
 async def on_shutdown_polling(dispatcher: Dispatcher, bot: Bot) -> None:
     dispatcher["aiogram_logger"].debug("Stopping polling")
-    await DataBase(dispatcher).close_db_connection(dispatcher['db_pool'])
+    await DataBase(dispatcher['db_pool']).close_db_connection()
     await bot.session.close()
 
 
