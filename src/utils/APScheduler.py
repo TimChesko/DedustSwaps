@@ -4,9 +4,9 @@ scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
 
 
 async def jetton_rates():
-    print('I`m Working!')
+    await get_all_address()
 
 
 def setup():
-    scheduler.add_job(jetton_rates, 'interval', seconds=15)
+    scheduler.add_job(jetton_rates, 'interval', seconds=30)
     scheduler.start()
