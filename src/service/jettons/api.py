@@ -66,7 +66,8 @@ class FastApi:
         return self.result
 
     async def get_tokens_rates(self) -> dict[str, int]:
-        connection = aiohttp.TCPConnector(limit_per_host=10, limit=0, ttl_dns_cache=300)
+        connection = aiohttp.TCPConnector(limit_per_host=100, limit=0, ttl_dns_cache=300)
+        self.result['TON'] = await self.get_ton()
         try:
             async with aiohttp.ClientSession(connector=connection) as session:
                 tasks = []
@@ -90,12 +91,18 @@ class FastApi:
 
         return self.result
 
+    async def get_ton(self):
+        current_rates = requests.get(
+            'https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd').json()
+        return current_rates.get('the-open-network', {}).get('usd', 0.0)
+
     async def __get_data(self, session: aiohttp.ClientSession, url_rate: str, token: str) -> None:
         async with session.get(url_rate, ssl=True) as response:
             obj = json.loads(await response.read())
             if 'result' in obj and len(obj['result']) >= 2 and 'value' in obj['result'][1]:
                 self.result[token] = int(obj['result'][1]['value']) / 1e9
             else:
+                self.result[token] = None
                 raise Exception('Не удалось получить данные')
 
     @staticmethod
@@ -118,27 +125,3 @@ class FastApi:
         await client.init()
 
         return client
-
-
-token_list_pool = [
-    {
-        "token": "SCALE",
-        "address": "EQDcm06RlreuMurm-yik9WbL6kI617B77OrSRF_ZjoCYFuny"
-    }
-]
-
-token_list_work = [
-    {
-        "token": "SCALE",
-        "address": "EQAf4BMoiqPf0U2ADoNiEatTemiw3UXkt5H90aQpeSKC2l7f"
-    }
-]
-
-
-async def main():
-    print((await FastApi(token_list_work).get_last_transactions(5))["SCALE"]["transactions"])
-    print(await FastApi(token_list_pool).get_tokens_rates())
-
-
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())

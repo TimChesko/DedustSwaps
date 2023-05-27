@@ -1,6 +1,8 @@
+import datetime
 import time
 
-from src.models.jetton_rate.get import get_last_jetton_rate
+from src.models.all_rates.get import GetterAllRates
+from src.models.all_rates.set import SetterAllRates
 from src.service.jettons.api import FastApi
 
 
@@ -12,71 +14,50 @@ class ProcessJettons:
         self.start = start
 
     async def update_rates(self):
-        await self.get_rates_and_transactions()
+        rates_response, trs_response = await self.get_rates_and_transactions()
+        await self.__process_rates(rates_response)
+        await self.__process_trs(trs_response)
 
-    async def get_rates_and_transactions(self):
-        rates_links, transactions_links = await self.__struct_info(self.jettons_info)
-        rates = await self.__sort_rates(await FastApi(rates_links, False).run())
-        transactions = await self.__sort_transactions(await FastApi(transactions_links, True).run())
-        print(transactions)
+    async def __process_trs(self, trs):
+        if self.start:
+            print("ADD last transaction")
+        else:
+            print("ADD all transactions to hash")
 
-    async def __sort_rates(self, response):
-        result = []
-        for token in self.jettons_info:
-            if token['tiker'] in response:
-                info = response[token['tiker']]
-                if 'result' in info and len(info['result']) >= 2 and 'value' in info['result'][1]:
-                    value = int(info['result'][1]['value']) / 1e9
-                    value = round(1 / value, token['decimals'])
-                    result.append([(token['tiker']).lower(), value])
-            else:
-                return None
-        return result
+    async def __process_rates(self, rates):
+        if await self.__check_rates(rates):
+            sql_columns, sql_values = await self.__get_sql_format(rates)
+            await SetterAllRates(self.pool).add_values(sql_columns, sql_values)
 
-    async def __sort_transactions(self, response):
-        verify_transactions = []
-        for token in self.jettons_info:
-            if token['tiker'] in response:
-                last_info = await get_last_jetton_rate(self.pool, token['tiker'])
-                for transaction in response[token['tiker']]:
-                    try:
-                        hash_transaction = transaction['hash']
-                        if last_info is not None and hash_transaction == last_info['hash']:
-                            break
-                        else:
-                            transaction_source = None
-                            if 'decoded_body' in transaction['out_msgs'][0] and 'Amount' in transaction['out_msgs'][0][
-                                'decoded_body']:
-                                transaction_source = transaction['out_msgs'][0]
-
-                            elif 'decoded_body' in transaction['in_msg'] and 'Amount' in transaction['in_msg'][
-                                'decoded_body']:
-                                transaction_source = transaction['in_msg']
-                            if transaction_source is not None:
-                                verify_transactions.append(
-                                    [token, transaction_source, hash_transaction])
-                                if self.start:
-                                    break
-                    except Exception as e:
-                        print(e)
-        return verify_transactions
-
-    async def __struct_info(self, all_jettons_address):
-        rates_links, transactions_links = [], []
-        block_info = [["block", "http://mainnet-v4.tonhubapi.com/block/latest"]]
-        block = (await FastApi(block_info, False).run())['block']['last']['seqno']
-        for token in all_jettons_address:
-            urls = await self.__create_link(token, block)
-            rates_links.append([token['tiker'], urls[0]])
-            transactions_links.append([token['tiker'], urls[1]])
-        return rates_links, transactions_links
+    async def __check_rates(self, rates):
+        last_rates = await GetterAllRates(self.pool).last_all_rates()
+        if last_rates is None:
+            return True
+        counter = 0
+        for rate in rates:
+            if rates[rate] is None:
+                return False
+            if rates[rate] == last_rates[rate.lower()]:
+                counter += 1
+        if counter != len(last_rates) - 1:
+            return True
+        return False
 
     @staticmethod
-    async def __create_link(token, block):
-        body = "te6ccgEBBAEAHQABGAAAAgEAAAAAO5rKAAECCQQAAEAgAwIAAQgAAA"
-        url_rate = f"http://mainnet-v4.tonhubapi.com/block/{block}/" \
-                   f"{token['pool_address']}/run/estimate_swap_out/{body}"
+    async def __get_sql_format(rates):
+        sql_columns = ",".join(map(str.lower, rates.keys()))
+        sql_values = ",".join([str(val) for val in rates.values()])
+        return sql_columns, sql_values
 
-        url_transactions = f"https://everspace.center/toncoin/getTransactions?address={token['work_address']}" \
-                           f"&limit=20"
-        return [url_rate, url_transactions]
+    async def get_rates_and_transactions(self):
+        tokens_list_pool, tokens_list_work = await self.__struct_info()
+        rates_response = await FastApi(tokens_list_pool).get_tokens_rates()
+        trs_response = await FastApi(tokens_list_work).get_last_transactions(5)
+        return rates_response, trs_response
+
+    async def __struct_info(self):
+        rates, transactions = [], []
+        for jetton in self.jettons_info:
+            rates.append({'token': jetton['tiker'], 'address': jetton['pool_address']})
+            transactions.append({'token': jetton['tiker'], 'address': jetton['work_address']})
+        return rates, transactions
