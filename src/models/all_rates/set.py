@@ -1,4 +1,3 @@
-import time
 from datetime import datetime
 
 from src.database.process import DataBase
@@ -15,8 +14,6 @@ class SetterAllRates:
         return await DataBase(self.pool).set(sql)
 
     async def add_values(self, columns, values):
-        print("time,", columns)
-        print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), values)
         sql = f"""INSERT INTO all_rates (time, {columns}) 
                     VALUES('{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', {values})"""
         return await DataBase(self.pool).set(sql)

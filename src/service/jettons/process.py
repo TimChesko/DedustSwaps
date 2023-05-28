@@ -12,7 +12,6 @@ class ProcessJettons:
         self.jettons_info = jettons_info
         self.start = start
 
-    # process time = 0.6-0.8 sec
     async def update_rates(self):
         rates_response, trs_response = await self.get_rates_and_transactions()
         await self.__process_rates(rates_response)
@@ -59,7 +58,7 @@ class ProcessJettons:
     async def get_rates_and_transactions(self):
         tokens_list_pool, tokens_list_work = await self.__struct_info()
         rates_response = await FastApi(tokens_list_pool).get_tokens_rates()
-        trs_response = await FastApi(tokens_list_work).get_last_transactions(5)
+        trs_response = await FastApi(tokens_list_work).get_last_transactions(10)
         return rates_response, trs_response
 
     async def __struct_info(self):
