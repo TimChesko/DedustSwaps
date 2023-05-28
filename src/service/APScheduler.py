@@ -14,5 +14,5 @@ async def jetton_rates(start: bool, dp: Dispatcher):
 
 def setup(dp: Dispatcher):
     scheduler.add_job(jetton_rates, args=[True, dp])
-    # scheduler.add_job(jetton_rates, 'interval', args=[False, dp], seconds=30)
+    scheduler.add_job(jetton_rates, 'interval', args=[False, dp], seconds=30)
     scheduler.start()

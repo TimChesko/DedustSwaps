@@ -1,8 +1,7 @@
-import datetime
-import time
-
 from src.models.all_rates.get import GetterAllRates
 from src.models.all_rates.set import SetterAllRates
+from src.models.jetton_rate.get import GetterJettonRate
+from src.models.jetton_rate.set import SetterJettonCurrency
 from src.service.jettons.api import FastApi
 
 
@@ -13,16 +12,24 @@ class ProcessJettons:
         self.jettons_info = jettons_info
         self.start = start
 
+    # process time = 0.6-0.8 sec
     async def update_rates(self):
         rates_response, trs_response = await self.get_rates_and_transactions()
         await self.__process_rates(rates_response)
         await self.__process_trs(trs_response)
 
     async def __process_trs(self, trs):
-        if self.start:
-            print("ADD last transaction")
-        else:
-            print("ADD all transactions to hash")
+        for token in trs:
+            last_tr = await GetterJettonRate(self.pool).last_jetton_transaction(token)
+            all_trs = trs[token]['transactions']
+            if self.start:
+                if last_tr["hash"] != all_trs[0]["hash"]:
+                    await SetterJettonCurrency(self.pool).add_value(token, all_trs[0])
+            else:
+                for i in range(len(all_trs)):
+                    if last_tr["hash"] == all_trs[i]["hash"] and i != 0:
+                        for x in reversed(all_trs[:i]):
+                            await SetterJettonCurrency(self.pool).add_value(token, x)
 
     async def __process_rates(self, rates):
         if await self.__check_rates(rates):
