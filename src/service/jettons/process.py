@@ -3,21 +3,22 @@ from src.models.all_rates.set import SetterAllRates
 from src.models.jetton_rate.get import GetterJettonRate
 from src.models.jetton_rate.set import SetterJettonCurrency
 from src.service.jettons.api import FastApi
+from asyncpg import Pool
 
 
 class ProcessJettons:
 
-    def __init__(self, pool, jettons_info, start):
+    def __init__(self, pool: Pool, jettons_info: list, start: bool):
         self.pool = pool
         self.jettons_info = jettons_info
         self.start = start
 
-    async def update_rates(self):
+    async def update_rates(self) -> None:
         rates_response, trs_response = await self.get_rates_and_transactions()
         await self.__process_rates(rates_response)
         await self.__process_trs(trs_response)
 
-    async def __process_trs(self, trs):
+    async def __process_trs(self, trs: dict) -> None:
         for token in trs:
             last_tr = await GetterJettonRate(self.pool).last_jetton_transaction(token)
             all_trs = trs[token]['transactions']
@@ -30,12 +31,12 @@ class ProcessJettons:
                         for x in reversed(all_trs[:i]):
                             await SetterJettonCurrency(self.pool).add_value(token, x)
 
-    async def __process_rates(self, rates):
+    async def __process_rates(self, rates: dict) -> None:
         if await self.__check_rates(rates):
             sql_columns, sql_values = await self.__get_sql_format(rates)
             await SetterAllRates(self.pool).add_values(sql_columns, sql_values)
 
-    async def __check_rates(self, rates):
+    async def __check_rates(self, rates: dict) -> bool:
         last_rates = await GetterAllRates(self.pool).last_all_rates()
         if last_rates is None:
             return True
@@ -50,18 +51,18 @@ class ProcessJettons:
         return False
 
     @staticmethod
-    async def __get_sql_format(rates):
+    async def __get_sql_format(rates: dict) -> tuple[str, str]:
         sql_columns = ",".join(map(str.lower, rates.keys()))
         sql_values = ",".join([str(val) for val in rates.values()])
         return sql_columns, sql_values
 
-    async def get_rates_and_transactions(self):
+    async def get_rates_and_transactions(self) -> tuple[dict[str, int], dict[str, str, str]]:
         tokens_list_pool, tokens_list_work = await self.__struct_info()
         rates_response = await FastApi(tokens_list_pool).get_tokens_rates()
         trs_response = await FastApi(tokens_list_work).get_last_transactions(10)
         return rates_response, trs_response
 
-    async def __struct_info(self):
+    async def __struct_info(self) -> tuple[list, list]:
         rates, transactions = [], []
         for jetton in self.jettons_info:
             rates.append({'token': jetton['tiker'], 'address': jetton['pool_address']})

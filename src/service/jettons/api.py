@@ -20,7 +20,7 @@ class FastApi:
     async def get_last_transactions(self, limit: int) -> dict[str, str, str]:
         client = await self.__get_client()
 
-        async def get(info: dict[str, str]):
+        async def get(info: dict[str, str]) -> None:
             trs = await client.get_transactions(account=info["address"], limit=limit)
             self.result[info['token']] = {'transactions': []}
             for tr in trs:
@@ -91,7 +91,8 @@ class FastApi:
 
         return self.result
 
-    async def get_ton(self):
+    @staticmethod
+    async def get_ton() -> float:
         current_rates = requests.get(
             'https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd').json()
         return current_rates.get('the-open-network', {}).get('usd', 0.0)
@@ -108,7 +109,7 @@ class FastApi:
     @staticmethod
     async def __create_link(info: dict[str, str], block: int) -> str:
         body = "te6ccgEBBAEAHQABGAAAAgEAAAAAO5rKAAECCQQAAEAgAwIAAQgAAA"
-        url_rate = f"http://mainnet-v4.tonhubapi.com/block/{block}/" \
+        url_rate = f"https://mainnet-v4.tonhubapi.com/block/{block}/" \
                    f"{info['address']}/run/estimate_swap_out/{body}"
         return url_rate
 
