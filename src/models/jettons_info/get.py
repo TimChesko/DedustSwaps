@@ -13,3 +13,7 @@ class JettonsInfo:
     async def get_all_address(self) -> list:
         sql = f"""SELECT tiker, pool_address, work_address FROM jettons_info"""
         return await DataBase(self.pool).get_all(sql)
+
+    async def get_address_by_token(self, jetton: str):
+        sql = f"""SELECT pool_address, work_address FROM jettons_info WHERE tiker='{jetton}'"""
+        return await DataBase(self.pool).get_row(sql)

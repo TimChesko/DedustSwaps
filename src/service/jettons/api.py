@@ -8,11 +8,11 @@ from pytonlib import TonlibClient
 from pytonlib.utils.tlb import Slice, deserialize_boc, JettonTransferNotificationMessage, \
     JettonTransferMessage
 from tonsdk.contract import Address
-from tonsdk.utils import b64str_to_bytes
+from tonsdk.utils import b64str_to_bytes, b64str_to_hex
 
 
 class FastApi:
-    def __init__(self, tokens_list: list[dict[str, str]]):
+    def __init__(self, tokens_list: list[dict[str, str, int]]):
         self.tokens_list = tokens_list
         self.block = None
         self.result = {}
@@ -20,19 +20,23 @@ class FastApi:
     async def get_last_transactions(self, limit: int) -> dict[str, str, str]:
         client = await self.__get_client()
 
-        async def get(info: dict[str, str]) -> None:
+        async def get(info: dict[str, str, int]) -> None:
             trs = await client.get_transactions(account=info["address"], limit=limit)
             self.result[info['token']] = {'transactions': []}
             for tr in trs:
+                time = tr['utime']
                 try:
                     body = tr['out_msgs'][0]['msg_data']['body']
                     cell = deserialize_boc(b64str_to_bytes(body))
                     value = JettonTransferMessage(Slice(cell))
+                    tr_hash = b64str_to_hex(tr['transaction_id']['hash'])
+                    true_value = round(float(value.amount / 1e9 * -1), int(info['decimals']))
                     self.result[info['token']]['transactions'].append(
                         {
                             "sender": "local",
-                            "value": value.amount / 1e9 * -1,
-                            "hash": tr['transaction_id']['hash']
+                            "value": true_value,
+                            "hash": tr_hash,
+                            "time": time
                         }
                     )
                 except:
@@ -42,13 +46,15 @@ class FastApi:
                     body = tr['in_msg']['msg_data']['body']
                     cell = deserialize_boc(b64str_to_bytes(body))
                     value = JettonTransferNotificationMessage(Slice(cell))
+                    tr_hash = b64str_to_hex(tr['transaction_id']['hash'])
                     sender_address = Address(
                         str(value.sender.workchain_id) + ':' + str(value.sender.address)).to_string(True, True, True)
                     self.result[info['token']]['transactions'].append(
                         {
                             "sender": sender_address,
                             "value": value.amount / 1e9,
-                            "hash": tr['transaction_id']['hash']
+                            "hash": tr_hash,
+                            "time": time
                         }
                     )
                 except:
@@ -56,12 +62,14 @@ class FastApi:
 
         tasks = [get(info) for info in self.tokens_list]
         try:
-            await asyncio.wait_for(asyncio.gather(*tasks), timeout=5)
+            await asyncio.wait_for(asyncio.gather(*tasks), timeout=15)
         except asyncio.TimeoutError:
             print("Timeout exceeded...")
             for task in tasks:
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
+        finally:
+            await client.close()
 
         return self.result
 

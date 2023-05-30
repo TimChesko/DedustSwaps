@@ -4,6 +4,7 @@ env = Env()
 env.read_env()
 
 BOT_TOKEN: str = env.str("BOT_TOKEN")
+CHANNEL_ID: int = env.int("CHANNEL_ID")
 
 PG_HOST: str = env.str("PG_HOST")
 PG_USER: str = env.str("PG_USER")

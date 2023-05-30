@@ -9,7 +9,7 @@ scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
 
 async def jetton_rates(start: bool, dp: Dispatcher):
     jettons_info = await JettonsInfo(dp['db_pool']).get_all()
-    await ProcessJettons(dp['db_pool'], jettons_info, start).update_rates()
+    await ProcessJettons(dp, jettons_info, start).update_rates()
 
 
 def setup(dp: Dispatcher):

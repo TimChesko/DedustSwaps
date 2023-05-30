@@ -8,12 +8,12 @@ from src import utils
 from src.data import config
 from src.database.process import DataBase
 from src.database.create import CreateTables
-from src.handlers import private
+from src import handlers
 from src.service import APScheduler
 
 
 async def set_handlers(dp: Dispatcher) -> None:
-    dp.include_router(private.router)
+    dp.include_router(handlers.router)
 
 
 async def set_middlewares() -> None:
@@ -67,7 +67,7 @@ async def main() -> None:
             )
         )
     )
-
+    dp['bot'] = bot
     dp.startup.register(on_startup_polling)
     dp.shutdown.register(on_shutdown_polling)
     await dp.start_polling(bot)
