@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import json
 from pathlib import Path
 
@@ -24,7 +25,7 @@ class FastApi:
             trs = await client.get_transactions(account=info["address"], limit=limit)
             self.result[info['token']] = {'transactions': []}
             for tr in trs:
-                time = tr['utime']
+                time = datetime.datetime.utcfromtimestamp(tr['utime']) + datetime.timedelta(hours=2)
                 try:
                     body = tr['out_msgs'][0]['msg_data']['body']
                     cell = deserialize_boc(b64str_to_bytes(body))

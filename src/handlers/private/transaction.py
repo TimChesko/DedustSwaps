@@ -28,10 +28,10 @@ async def create_text_and_buttons(pool: Pool, hash_tr: str) -> tuple[str, Inline
 
     last_rate = await GetterAllRates(pool).last_all_rates()
     text = f"<b>{transaction_type} #{tiker} {round(value, 1)}</b> " \
-           f"({round(value * last_rate[tiker.lower()], 2)} TON / " \
-           f"${round((value * last_rate[tiker.lower()]) * last_rate['ton'], 2)})\n" \
-           f"💱 <b>{last_rate[tiker.lower()]}</b> / " \
-           f"${round(last_rate[tiker.lower()] * last_rate['ton'], 3)}\n" \
+           f"({round(value / last_rate[tiker.lower()], 2)} TON / " \
+           f"${round((value / last_rate[tiker.lower()]) / last_rate['ton'], 2)})\n" \
+           f"💱 <b>{round(last_rate[tiker.lower()], 2)}</b> / " \
+           f"${round(1 / last_rate[tiker.lower()] / last_rate['ton'], 3)}\n" \
            f"{time}\n\n" \
            f"Объем продаж:\n" \
            f"1 день: {v_today}\n" \

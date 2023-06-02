@@ -39,12 +39,12 @@ class ProcessJettons:
         bot_name = (await self.bot.get_me()).username
         for index, info in enumerate(self.trs_to_text):
             token = next(iter(info.keys()))
+            emoji = next((i['emoji'] for i in self.jettons_info if i['tiker'].lower() == token.lower()), "")
             if len(self.trs_to_text[index][token]) != 0:
-                text_token = f"#{token}\n" if len(text_all) == 0 else f"\n#{token}\n"
+                text_token = f"{emoji}#{token}\n" if len(text_all) == 0 else f"\n{emoji}#{token}\n"
                 for tr in self.trs_to_text[index][token]:
-                    text_tr = "🟢 / " if tr['value'] < 0 else "🔴 / "
-                    text_tr += str(abs(tr['value'])) + \
-                               f" / {datetime.utcfromtimestamp(tr['time']).strftime('%H:%M:%S')}"
+                    text_tr = f"🟢 / " if tr['value'] < 0 else "🔴 / "
+                    text_tr += str(abs(tr['value'])) + f" / {tr['time'].strftime('%H:%M:%S')}"
                     text_token += hlink(text_tr, f"https://t.me/{bot_name}?start={tr['hash']}") + "\n"
 
                 if len(text_all + text_token) >= 4096:
@@ -62,7 +62,7 @@ class ProcessJettons:
             last_tr = await GetterJettonRate(self.pool).last_jetton_transaction(token)
             all_trs = trs[token]['transactions']
             if self.start:
-                if last_tr["hash"] != all_trs[0]["hash"]:
+                if last_tr is None or last_tr["hash"] != all_trs[0]["hash"]:
                     await SetterJettonCurrency(self.pool).add_value(token, all_trs[0])
             else:
                 self.trs_to_text.append({token: []})

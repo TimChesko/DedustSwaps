@@ -30,7 +30,7 @@ class CreateTables:
                                 time TIMESTAMP NOT NULL,
                                 ton FLOAT)
                         ''', '''
-                            CREATE TABLE IF NOT EXISTS jetton_currency (
+                            CREATE TABLE IF NOT EXISTS jetton_rate (
                                 jetton TEXT NOT NULL,
                                 hash TEXT NOT NULL,
                                 value FLOAT NOT NULL,

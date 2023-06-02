@@ -4,6 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Tima <timofey.lazarev@gmail.com>"]
 readme = "README.md"
+packages = [{ include = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -15,8 +16,13 @@ redis = "^4.5.5"
 apscheduler = "^3.10.1"
 requests = "^2.31.0"
 tonsdk = "^1.0.13"
-
+asyncpg = "^0.27.0"
+pytonlib = "^0.0.46"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+aiogram_bot = "src.main:run"

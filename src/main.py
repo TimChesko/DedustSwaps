@@ -22,15 +22,15 @@ async def set_middlewares() -> None:
 
 async def set_logging(dp: Dispatcher) -> None:
     dp["aiogram_logger_init"] = {"type": "aiogram"}
-    dp["aiogram_logger"] = utils.logging.setup_logger().bind(
-        **dp["aiogram_logger_init"]
-    )
+    dp["aiogram_logger"] = utils.logging.setup_logger().bind(**dp["aiogram_logger_init"])
+    dp["business_logger_init"] = {"type": "business"}
+    dp["business_logger"] = utils.logging.setup_logger().bind(**dp["business_logger_init"])
 
 
 async def setup_aiogram(dp: Dispatcher) -> None:
     await set_logging(dp)
     logger = dp["aiogram_logger"]
-    logger.debug("Configuring aiogram")
+    logger.info("Configuring aiogram")
     await set_handlers(dp)
     await set_middlewares()
     logger.info("Configured aiogram")
@@ -73,5 +73,9 @@ async def main() -> None:
     await dp.start_polling(bot)
 
 
-if __name__ == "__main__":
+def run():
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    run()
